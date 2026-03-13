@@ -105,11 +105,21 @@ export default function Dashboard() {
     const val = getVal(curr);
     if (isNaN(val)) return acc;
 
-    const matches = (keywords: string[]) => keywords.some(k => name.includes(k.toLowerCase()));
+    const checkWord = (k: string) => {
+      const keyword = k.toLowerCase();
+      if (name === keyword) return true;
+      if (keyword.length <= 4) {
+        const regex = new RegExp(`(^|[^a-z0-9])${keyword}([^a-z0-9]|$)`, 'i');
+        return regex.test(name);
+      }
+      return name.includes(keyword);
+    };
 
-    if (matches(['creatinine', 'cr'])) acc[curr.Date].cr = val;
-    if (matches(['fasting blood sugar', 'fbs', 'glucose'])) acc[curr.Date].fbs = val;
-    if (matches(['hba1c', 'hemoglobin a1c'])) {
+    const matches = (keywords: string[]) => keywords.some(checkWord);
+
+    if (matches(['creatinine', 'cr']) && !matches(['ratio', 'clearance']) && acc[curr.Date].cr === undefined) acc[curr.Date].cr = val;
+    if (matches(['fasting blood sugar', 'fbs', 'glucose']) && !matches(['average', 'eag', 'urine']) && acc[curr.Date].fbs === undefined) acc[curr.Date].fbs = val;
+    if (matches(['hba1c', 'hemoglobin a1c']) && !matches(['average', 'eag']) && acc[curr.Date].hba1c === undefined) {
       // Handle IFCC (mmol/mol) to NGSP (%) conversion if value is high
       let hba1cVal = val;
       if (hba1cVal > 20) {
@@ -117,33 +127,33 @@ export default function Dashboard() {
       }
       acc[curr.Date].hba1c = hba1cVal;
     }
-    if (matches(['ast', 'sgot'])) acc[curr.Date].ast = val;
-    if (matches(['alt', 'sgpt'])) acc[curr.Date].alt = val;
-    if (matches(['alp', 'alkaline phosphatase'])) acc[curr.Date].alp = val;
-    if (matches(['bun', 'blood urea nitrogen'])) acc[curr.Date].bun = val;
-    if (matches(['ldl', 'low density'])) acc[curr.Date].ldl = val;
-    if (matches(['hdl', 'high density'])) acc[curr.Date].hdl = val;
-    if (matches(['triglyceride', 'tg'])) acc[curr.Date].tg = val;
-    if (matches(['total cholesterol', 'cholesterol', 'tc'])) acc[curr.Date].tc = val;
+    if (matches(['ast', 'sgot']) && !matches(['ratio']) && acc[curr.Date].ast === undefined) acc[curr.Date].ast = val;
+    if (matches(['alt', 'sgpt']) && !matches(['ratio']) && acc[curr.Date].alt === undefined) acc[curr.Date].alt = val;
+    if (matches(['alp', 'alkaline phosphatase']) && !matches(['isoenzyme']) && acc[curr.Date].alp === undefined) acc[curr.Date].alp = val;
+    if (matches(['bun', 'blood urea nitrogen']) && !matches(['ratio']) && acc[curr.Date].bun === undefined) acc[curr.Date].bun = val;
+    if (matches(['ldl', 'low density']) && !matches(['ratio']) && acc[curr.Date].ldl === undefined) acc[curr.Date].ldl = val;
+    if (matches(['hdl', 'high density']) && !matches(['ratio']) && acc[curr.Date].hdl === undefined) acc[curr.Date].hdl = val;
+    if (matches(['triglyceride', 'tg']) && !matches(['ratio']) && acc[curr.Date].tg === undefined) acc[curr.Date].tg = val;
+    if (matches(['total cholesterol', 'cholesterol', 'tc']) && !matches(['hdl', 'ldl', 'ratio']) && acc[curr.Date].tc === undefined) acc[curr.Date].tc = val;
     
     // Thyroid
-    if (matches(['tsh', 'thyroid stimulating'])) acc[curr.Date].tsh = val;
-    if (matches(['ft3', 'free t3'])) acc[curr.Date].ft3 = val;
-    if (matches(['ft4', 'free t4'])) acc[curr.Date].ft4 = val;
-    if (matches(['t3', 'triiodothyronine']) && !matches(['free'])) acc[curr.Date].t3 = val;
-    if (matches(['t4', 'thyroxine']) && !matches(['free'])) acc[curr.Date].t4 = val;
+    if (matches(['tsh', 'thyroid stimulating']) && acc[curr.Date].tsh === undefined) acc[curr.Date].tsh = val;
+    if (matches(['ft3', 'free t3']) && !matches(['total']) && acc[curr.Date].ft3 === undefined) acc[curr.Date].ft3 = val;
+    if (matches(['ft4', 'free t4']) && !matches(['total']) && acc[curr.Date].ft4 === undefined) acc[curr.Date].ft4 = val;
+    if (matches(['t3', 'triiodothyronine']) && !matches(['free']) && acc[curr.Date].t3 === undefined) acc[curr.Date].t3 = val;
+    if (matches(['t4', 'thyroxine']) && !matches(['free']) && acc[curr.Date].t4 === undefined) acc[curr.Date].t4 = val;
 
     // Inflammation
-    if (matches(['hs-crp', 'hscrp', 'c-reactive protein'])) acc[curr.Date].crp = val;
-    if (matches(['esr', 'erythrocyte sedimentation rate'])) acc[curr.Date].esr = val;
+    if (matches(['hs-crp', 'hscrp', 'c-reactive protein']) && acc[curr.Date].crp === undefined) acc[curr.Date].crp = val;
+    if (matches(['esr', 'erythrocyte sedimentation rate']) && acc[curr.Date].esr === undefined) acc[curr.Date].esr = val;
 
     // Tumor Markers
-    if (matches(['cea', 'carcinoembryonic'])) acc[curr.Date].cea = val;
-    if (matches(['afp', 'alpha-fetoprotein', 'alpha fetoprotein'])) acc[curr.Date].afp = val;
-    if (matches(['psa', 'prostate specific antigen'])) acc[curr.Date].psa = val;
-    if (matches(['ca 125', 'ca125'])) acc[curr.Date].ca125 = val;
-    if (matches(['ca 15-3', 'ca15-3', 'ca153'])) acc[curr.Date].ca153 = val;
-    if (matches(['ca 19-9', 'ca19-9', 'ca199'])) acc[curr.Date].ca199 = val;
+    if (matches(['cea', 'carcinoembryonic']) && acc[curr.Date].cea === undefined) acc[curr.Date].cea = val;
+    if (matches(['afp', 'alpha-fetoprotein', 'alpha fetoprotein']) && acc[curr.Date].afp === undefined) acc[curr.Date].afp = val;
+    if (matches(['psa', 'prostate specific antigen']) && acc[curr.Date].psa === undefined) acc[curr.Date].psa = val;
+    if (matches(['ca 125', 'ca125']) && acc[curr.Date].ca125 === undefined) acc[curr.Date].ca125 = val;
+    if (matches(['ca 15-3', 'ca15-3', 'ca153']) && acc[curr.Date].ca153 === undefined) acc[curr.Date].ca153 = val;
+    if (matches(['ca 19-9', 'ca19-9', 'ca199']) && acc[curr.Date].ca199 === undefined) acc[curr.Date].ca199 = val;
 
     return acc;
   }, {});

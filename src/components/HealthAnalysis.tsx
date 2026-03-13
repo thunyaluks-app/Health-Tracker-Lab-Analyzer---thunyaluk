@@ -77,10 +77,22 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     }
 
     // Helper to get latest lab value
-    const getLatestLab = (testNames: string[]) => {
+    const getLatestLab = (testNames: string[], excludeNames: string[] = []) => {
       const matchedLabs = labs.filter(l => {
         const labName = (l.TestName || '').toLowerCase();
-        const isMatch = testNames.some(name => labName.includes(name.toLowerCase()));
+        
+        const checkWord = (k: string) => {
+          const keyword = k.toLowerCase();
+          if (labName === keyword) return true;
+          if (keyword.length <= 4) {
+            const regex = new RegExp(`(^|[^a-z0-9])${keyword}([^a-z0-9]|$)`, 'i');
+            return regex.test(labName);
+          }
+          return labName.includes(keyword);
+        };
+
+        const isMatch = testNames.some(checkWord);
+        const isExcluded = excludeNames.some(checkWord);
         
         // Robust value parsing: extract first number found in string
         const rawVal = l.Value ?? l.ResultValue ?? l.Result ?? l.value;
@@ -90,7 +102,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
         const match = stringVal.match(/[-+]?\d*\.?\d+/);
         const val = match ? parseFloat(match[0]) : NaN;
         
-        return isMatch && !isNaN(val);
+        return isMatch && !isExcluded && !isNaN(val);
       });
       
       if (matchedLabs.length === 0) return null;
@@ -113,7 +125,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     };
 
     // 2. Blood Sugar (FBS & HbA1c)
-    const fbs = getLatestLab(['Fasting Blood Sugar', 'FBS', 'Glucose']);
+    const fbs = getLatestLab(['Fasting Blood Sugar', 'FBS', 'Glucose'], ['average', 'eag', 'urine']);
     if (fbs) {
       const val = fbs.parsedValue;
       let status = '';
@@ -146,7 +158,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const hba1c = getLatestLab(['HbA1c', 'Hemoglobin A1c']);
+    const hba1c = getLatestLab(['HbA1c', 'Hemoglobin A1c'], ['average', 'eag']);
     if (hba1c) {
       let val = hba1c.parsedValue;
       
@@ -187,7 +199,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     }
 
     // 3. Lipid Profile
-    const ldl = getLatestLab(['LDL', 'Low Density Lipoprotein']);
+    const ldl = getLatestLab(['LDL', 'Low Density Lipoprotein'], ['ratio']);
     if (ldl) {
       const val = ldl.parsedValue;
       let status = '';
@@ -224,7 +236,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const hdl = getLatestLab(['HDL', 'High Density Lipoprotein']);
+    const hdl = getLatestLab(['HDL', 'High Density Lipoprotein'], ['ratio']);
     if (hdl) {
       const val = hdl.parsedValue;
       // Default to male threshold if gender not specified, but adjust if female
@@ -260,7 +272,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const tg = getLatestLab(['Triglyceride', 'TG']);
+    const tg = getLatestLab(['Triglyceride', 'TG'], ['ratio']);
     if (tg) {
       const val = tg.parsedValue;
       let status = '';
@@ -294,7 +306,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     }
 
     // Lipid Ratios
-    const tc = getLatestLab(['Total Cholesterol', 'Cholesterol', 'TC']);
+    const tc = getLatestLab(['Total Cholesterol', 'Cholesterol', 'TC'], ['hdl', 'ldl', 'ratio']);
     if (tc && hdl) {
       const tcVal = tc.parsedValue;
       const hdlVal = hdl.parsedValue;
@@ -641,8 +653,8 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     }
 
     // 4. Hydration & Protein (BUN/Creatinine)
-    const bun = getLatestLab(['BUN', 'Blood Urea Nitrogen']);
-    const cr = getLatestLab(['Creatinine', 'Cr']);
+    const bun = getLatestLab(['BUN', 'Blood Urea Nitrogen'], ['ratio']);
+    const cr = getLatestLab(['Creatinine', 'Cr'], ['ratio', 'clearance']);
     
     if (bun && cr) {
       const bunVal = bun.parsedValue;
@@ -778,7 +790,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const ft3 = getLatestLab(['Free T3', 'FT3']);
+    const ft3 = getLatestLab(['Free T3', 'FT3'], ['total']);
     if (ft3) {
       const val = ft3.parsedValue;
       let status = '';
@@ -811,7 +823,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const ft4 = getLatestLab(['Free T4', 'FT4']);
+    const ft4 = getLatestLab(['Free T4', 'FT4'], ['total']);
     if (ft4) {
       const val = ft4.parsedValue;
       let status = '';
@@ -845,7 +857,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
     }
 
     // 7. Liver Function
-    const ast = getLatestLab(['AST', 'SGOT', 'Aspartate Aminotransferase']);
+    const ast = getLatestLab(['AST', 'SGOT', 'Aspartate Aminotransferase'], ['ratio']);
     if (ast) {
       const val = ast.parsedValue;
       let status = '';
@@ -878,7 +890,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const alt = getLatestLab(['ALT', 'SGPT', 'Alanine Aminotransferase']);
+    const alt = getLatestLab(['ALT', 'SGPT', 'Alanine Aminotransferase'], ['ratio']);
     if (alt) {
       const val = alt.parsedValue;
       let status = '';
@@ -911,7 +923,7 @@ export default function HealthAnalysis({ vitals, labs, profile }: HealthAnalysis
       });
     }
 
-    const alp = getLatestLab(['ALP', 'Alkaline Phosphatase']);
+    const alp = getLatestLab(['ALP', 'Alkaline Phosphatase'], ['isoenzyme']);
     if (alp) {
       const val = alp.parsedValue;
       let status = '';
